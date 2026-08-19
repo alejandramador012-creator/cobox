@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Manrope:wght@200;300;400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;}
+    body{margin:0;font-family:'Manrope',sans-serif;-webkit-font-smoothing:antialiased;}
+    ::selection{background:#9C1B3E;color:#fff;}
+    ::-webkit-scrollbar{height:6px;width:6px;}
+    ::-webkit-scrollbar-thumb{background:rgba(128,128,128,.3);border-radius:6px;}
+    ::-webkit-scrollbar-track{background:transparent;}
+    @keyframes coboxFadeUp{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
+    @keyframes coboxPulse{50%{opacity:.35;}}
+    @keyframes coboxDrift{0%{transform:translate(0,0) rotate(0deg);}100%{transform:translate(-26px,20px) rotate(8deg);}}
+    @media (max-width:820px){
+      .cobox-detail-body{flex-direction:column!important;}
+      .cobox-sidebar{flex-direction:row!important;width:100%!important;position:static!important;overflow-x:auto!important;overflow-y:hidden!important;max-height:none!important;padding-right:0!important;padding-bottom:6px!important;}
+    }
+  </style>
+</helmet>
+
+<div style="{{ rootStyle }}">
+
+  <!-- ===================== WELCOME ===================== -->
+  <div style="{{ welcomeStyle }}">
+    <img src="./cobox-icon.png" style="position:absolute;width:min(900px,140vw);height:auto;aspect-ratio:966/830;opacity:.035;top:-18vw;right:-18vw;animation:coboxDrift 30s ease-in-out infinite alternate;pointer-events:none;"/>
+    <div style="position:relative;text-align:center;max-width:640px;padding:0 24px;animation:coboxFadeUp 1s ease both;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-weight:400;font-size:10px;letter-spacing:.3em;text-transform:uppercase;color:#6E655A;margin-bottom:26px;">Arquitectura · Negocios · Sistemas · Diseño</div>
+      <img src="./cobox-wordmark.png" style="height:clamp(46px,9vw,86px);width:auto;margin:0 auto;display:block;"/>
+      <div style="font-family:'Manrope',sans-serif;font-weight:300;font-size:clamp(14px,2.4vw,16px);line-height:1.7;color:#8A8175;margin-top:30px;max-width:420px;margin-left:auto;margin-right:auto;">Todos tus proyectos en un solo tablero. Entra para ver el avance y actualizarlo en tiempo real.</div>
+      <button onclick="{{ onEnter }}" style="margin-top:40px;display:inline-flex;align-items:center;gap:10px;background:transparent;color:#F3EFE9;border:1px solid rgba(255,255,255,.28);border-radius:100px;padding:16px 32px;font-family:'Manrope',sans-serif;font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;" style-hover="background:#F3EFE9;color:#0B0A09;border-color:#F3EFE9;">Entrar al estudio</button>
+    </div>
+  </div>
+
+  <sc-if value="{{ bubbleActive }}" hint-placeholder-val="{{ false }}">
+    <div style="{{ bubbleStyle }}"></div>
+  </sc-if>
+
+  <!-- ===================== DASHBOARD ===================== -->
+  <div style="{{ dashboardStyle }}">
+    <div style="{{ headerStyle }}">
+      <img src="./cobox-wordmark.png" style="{{ logoStyle }}"/>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div style="{{ syncPillStyle }}">
+          <span style="{{ syncDotStyle }}"></span><span>{{ syncLabel }}</span>
+        </div>
+        <button onclick="{{ onToggleTheme }}" style="{{ themeBtnStyle }}">{{ themeIcon }}</button>
+        <button onclick="{{ onManualSync }}" style="{{ ghostBtnStyle }}">Actualizar</button>
+      </div>
+    </div>
+
+    <div style="max-width:1320px;margin:0 auto;padding:clamp(28px,5vw,56px) clamp(18px,4vw,40px) 110px;">
+      <div style="margin-bottom:clamp(30px,5vw,50px);">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#9C1B3E;margin-bottom:14px;">Panel de proyectos</div>
+        <div style="{{ h1Style }}">Tus proyectos,<br>en un solo tablero.</div>
+        <div style="{{ subtleTextStyle }}font-size:15.5px;font-weight:300;margin-top:14px;max-width:520px;">Arrastra una tarjeta para reordenarla dentro de su columna. Abre un proyecto para ver o mover el avance.</div>
+      </div>
+
+      <sc-for list="{{ statusGroups }}" as="group" hint-placeholder-count="5">
+        <section style="margin-bottom:44px;">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;">
+            <span style="{{ group.dotStyle }}"></span>
+            <div style="{{ eyebrowStrongStyle }}">{{ group.label }}</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#6E655A;">{{ group.count }}</div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;">
+            <sc-for list="{{ group.cards }}" as="card" hint-placeholder-count="2">
+              <div draggable="true" ondragstart="{{ card.onDragStart }}" ondragover="{{ card.onDragOver }}" ondrop="{{ card.onDrop }}" onclick="{{ card.onOpen }}" style="{{ card.style }}" style-hover="{{ card.hoverStyle }}">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#9C1B3E;margin-bottom:14px;">{{ card.type }}</div>
+                <div style="{{ card.nameStyle }}">{{ card.name }}</div>
+                <div style="color:#6E655A;font-size:12.5px;font-weight:300;margin-bottom:auto;">{{ card.loc }}</div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-top:20px;gap:14px;">
+                  <div style="{{ card.trackStyle }}">
+                    <div style="{{ card.pctBarStyle }}"></div>
+                  </div>
+                  <div style="{{ card.pctTextStyle }}">{{ card.pct }}%</div>
+                </div>
+              </div>
+            </sc-for>
+            <div onclick="{{ group.onAdd }}" style="{{ addCardStyle }}" style-hover="border-color:#9C1B3E;color:#F0B4C6;background:rgba(156,27,62,.06);">
+              <div style="font-size:26px;font-family:'Fraunces',serif;line-height:1;">+</div>
+              <div style="font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;">Nuevo proyecto</div>
+            </div>
+          </div>
+        </section>
+      </sc-for>
+    </div>
+  </div>
+
+  <!-- ===================== NEW PROJECT MODAL ===================== -->
+  <sc-if value="{{ modalOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;z-index:100;background:rgba(4,3,3,.72);display:flex;align-items:center;justify-content:center;padding:20px;animation:coboxFadeUp .25s ease both;">
+      <div style="{{ modalCardStyle }}">
+        <div style="{{ modalTitleStyle }}">Nuevo proyecto</div>
+        <div style="{{ labelStyle }}">Nombre del cliente o proyecto</div>
+        <input value="{{ modalName }}" oninput="{{ onModalNameChange }}" placeholder="Ej. Familia Duarte — Casa La Ceiba" style="{{ inputStyle }}margin-bottom:18px;"/>
+        <div style="{{ labelStyle }}">Tipo de proyecto</div>
+        <select value="{{ modalType }}" onchange="{{ onModalTypeChange }}" style="{{ inputStyle }}margin-bottom:28px;">
+          <option style="{{ optionStyle }}">Residencial</option><option style="{{ optionStyle }}">Comercial</option><option style="{{ optionStyle }}">Franquicia</option><option style="{{ optionStyle }}">Reforma</option>
+        </select>
+        <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;">
+          <button onclick="{{ onModalClose }}" style="{{ ghostBtnStyle }}">Cancelar</button>
+          <button onclick="{{ onModalCreate }}" style="background:#9C1B3E;color:#fff;border:none;border-radius:100px;padding:12px 26px;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;">Crear proyecto</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ===================== DETAIL ===================== -->
+  <div style="{{ detailStyle }}">
+    <div style="max-width:1200px;margin:0 auto;padding:22px clamp(16px,4vw,36px) 120px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;gap:10px;flex-wrap:wrap;">
+        <button onclick="{{ onBackHome }}" style="background:transparent;border:none;color:#8A8175;font-size:12.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:8px 4px;" style-hover="color:#F3EFE9;">← Todos los proyectos</button>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button onclick="{{ onToggleTheme }}" style="{{ themeBtnStyle }}">{{ themeIcon }}</button>
+        </div>
+      </div>
+
+      <div style="{{ enterAnimStyle }}">
+        <div style="display:inline-flex;align-items:center;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:#8A8175;margin-bottom:18px;">
+          <span>Ficha de proyecto ·</span>
+          <select value="{{ pType }}" onchange="{{ onTypeChange }}" style="{{ typeSelectStyle }}">
+            <option style="{{ optionStyle }}">Residencial</option><option style="{{ optionStyle }}">Comercial</option><option style="{{ optionStyle }}">Franquicia</option><option style="{{ optionStyle }}">Reforma</option>
+          </select>
+        </div>
+        <div contenteditable="true" onblur="{{ onNameBlur }}" data-ph="Nombre del proyecto" style="{{ heroNameStyle }}">{{ pName }}</div>
+        <div contenteditable="true" onblur="{{ onLocBlur }}" data-ph="Ubicación del proyecto" style="{{ heroLocStyle }}">{{ pLoc }}</div>
+        <div style="display:flex;gap:clamp(18px,3vw,38px);margin-top:26px;flex-wrap:wrap;">
+          <div style="display:flex;flex-direction:column;gap:6px;"><span style="{{ microLabelStyle }}">Área</span><span contenteditable="true" onblur="{{ onAreaBlur }}" data-ph="m²" style="{{ fieldValStyle }}">{{ pArea }}</span></div>
+          <div style="display:flex;flex-direction:column;gap:6px;"><span style="{{ microLabelStyle }}">PM</span><span contenteditable="true" onblur="{{ onPmBlur }}" data-ph="Responsable" style="{{ fieldValStyle }}">{{ pPM }}</span></div>
+          <div style="display:flex;flex-direction:column;gap:6px;"><span style="{{ microLabelStyle }}">Inicio</span><span contenteditable="true" onblur="{{ onStartBlur }}" data-ph="dd/mm/aa" style="{{ fieldValStyle }}">{{ pStart }}</span></div>
+          <div style="display:flex;flex-direction:column;gap:6px;"><span style="{{ microLabelStyle }}">Entrega</span><span contenteditable="true" onblur="{{ onEndBlur }}" data-ph="dd/mm/aa" style="{{ fieldValStyle }}">{{ pEnd }}</span></div>
+          <div style="display:flex;flex-direction:column;gap:6px;"><span style="{{ microLabelStyle }}">Estado</span>
+            <select value="{{ pStatusLabel }}" onchange="{{ onStatusChange }}" style="{{ pStatusSelectStyle }}">
+              <option style="{{ optionStyle }}">Planeación</option>
+              <option style="{{ optionStyle }}">En diseño</option>
+              <option style="{{ optionStyle }}">En construcción</option>
+              <option style="{{ optionStyle }}">En revisión</option>
+              <option style="{{ optionStyle }}">Entregado</option>
+              <option style="{{ optionStyle }}">En pausa</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="cobox-detail-body" style="{{ detailBodyStyle }}">
+        <div class="cobox-sidebar" style="{{ tabBarStyle }}">
+          <sc-for list="{{ tabs }}" as="tab" hint-placeholder-count="8">
+            <button onclick="{{ tab.onClick }}" style="{{ tab.style }}">{{ tab.label }}</button>
+          </sc-for>
+        </div>
+        <div style="{{ detailContentStyle }}">
+
+      <!-- RESUMEN -->
+      <sc-if value="{{ showResumen }}" hint-placeholder-val="{{ true }}">
+        <div>
+          <div style="{{ statBoxStyle }}margin-bottom:26px;">
+            <div style="{{ eyebrowStyle }}">Presupuesto estimado</div>
+            <div contenteditable="true" onblur="{{ onBudgetBlur }}" data-ph="$ —" style="{{ statValueSmStyle }}">{{ pBudget }}</div>
+          </div>
+          <section style="margin-bottom:40px;">
+            <div style="{{ h2Style }}">Alcance del servicio</div>
+            <div style="display:flex;flex-wrap:wrap;gap:10px;">
+              <sc-for list="{{ scopeItems }}" as="s" hint-placeholder-count="7">
+                <div onclick="{{ s.onClick }}" style="{{ s.style }}">
+                  <span style="{{ s.boxStyle }}"></span>{{ s.label }}
+                </div>
+              </sc-for>
+            </div>
+          </section>
+          <section style="margin-bottom:40px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+              <span style="{{ eyebrowStyle }}">Avance general del proyecto</span>
+              <span style="{{ bigNumberStyle }}">{{ pctLabel }}</span>
+            </div>
+            <div style="{{ trackBigStyle }}"><div style="{{ pctBarStyle }}"></div></div>
+            <input type="range" min="0" max="100" value="{{ pct }}" onchange="{{ onPctChange }}" style="width:100%;margin-top:16px;accent-color:#9C1B3E;height:4px;"/>
+          </section>
+          <section>
+            <div style="{{ h2Style }}">Notas del proyecto</div>
+            <textarea value="{{ pNotes }}" oninput="{{ onNotesInput }}" placeholder="Contexto, restricciones, preferencias del cliente..." style="{{ textareaStyle }}"></textarea>
+          </section>
+        </div>
+      </sc-if>
+
+      <!-- CRONOGRAMA -->
+      <sc-if value="{{ showCronograma }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <div style="overflow-x:auto;margin-bottom:14px;"><div style="min-width:820px;">
+            <div style="{{ fasesHeadStyle }}"><span></span><span>Fase</span><span>Responsable</span><span>Inicio</span><span>Entrega</span><span>Estado</span><span></span></div>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <sc-for list="{{ fasesRows }}" as="row" hint-placeholder-count="4">
+                <div style="{{ row.wrapStyle }}">
+                  <button onclick="{{ row.onToggleDone }}" style="{{ row.checkStyle }}">{{ row.checkMark }}</button>
+                  <sc-for list="{{ row.cells }}" as="cell" hint-placeholder-count="5">
+                    <sc-if value="{{ cell.isText }}"><span contenteditable="true" onblur="{{ cell.onBlur }}" data-ph="{{ cell.ph }}" style="{{ cell.textStyle }}">{{ cell.value }}</span></sc-if>
+                    <sc-if value="{{ cell.isPill }}"><span onclick="{{ cell.onCycle }}" style="{{ cell.pillStyle }}"><span style="{{ cell.dotStyle }}"></span>{{ cell.label }}</span></sc-if>
+                  </sc-for>
+                  <button onclick="{{ row.onDelete }}" style="{{ delBtnStyle }}">×</button>
+                </div>
+              </sc-for>
+            </div>
+          </div></div>
+          <button onclick="{{ onAddFase }}" style="{{ dashedBtnStyle }}">+ Agregar fase</button>
+        </div>
+      </sc-if>
+
+      <!-- PRESUPUESTO -->
+      <sc-if value="{{ showPresupuesto }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <div style="display:flex;gap:12px;margin-bottom:28px;flex-wrap:wrap;">
+            <div style="{{ statBoxAccentStyle }}flex:1;min-width:170px;"><div style="{{ eyebrowAccentStyle }}">Total del proyecto</div><div style="{{ statValueStyle }}">{{ totalProyecto }}</div></div>
+            <div style="{{ statBoxStyle }}flex:1;min-width:170px;"><div style="{{ eyebrowStyle }}">Pagado</div><div style="{{ statValueStyle }}">{{ totalPagado }}</div></div>
+            <div style="{{ statBoxStyle }}flex:1;min-width:170px;"><div style="{{ eyebrowStyle }}">Saldo pendiente</div><div style="{{ statValueStyle }}">{{ totalSaldo }}</div></div>
+          </div>
+
+          <div style="{{ h2Style }}">Presupuesto por categoría</div>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;">
+            <sc-for list="{{ catVisual }}" as="c" hint-placeholder-count="4">
+              <div style="{{ c.wrapStyle }}">
+                <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:10px;">
+                  <span contenteditable="true" onblur="{{ c.onNameBlur }}" data-ph="Categoría" style="{{ c.nameStyle }}">{{ c.name }}</span>
+                  <button onclick="{{ c.onDelete }}" style="{{ delBtnStyle }}">×</button>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+                  <span style="{{ c.miniLabelStyle }}">Est.</span>
+                  <div style="{{ c.trackStyle }}"><div style="{{ c.estBarStyle }}"></div></div>
+                  <span contenteditable="true" onblur="{{ c.onEstBlur }}" data-ph="$ 0" style="{{ c.moneyStyle }}">{{ c.est }}</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <span style="{{ c.miniLabelStyle }}">Real</span>
+                  <div style="{{ c.trackStyle }}"><div style="{{ c.realBarStyle }}"></div></div>
+                  <span contenteditable="true" onblur="{{ c.onRealBlur }}" data-ph="$ 0" style="{{ c.moneyStyle }}">{{ c.real }}</span>
+                </div>
+                <div style="{{ c.diffStyle }}">{{ c.diffLabel }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <button onclick="{{ onAddCat }}" style="{{ dashedBtnStyle }}margin-bottom:36px;">+ Agregar categoría</button>
+
+          <div style="{{ h2Style }}">Pagos</div>
+          <div style="overflow-x:auto;"><div style="min-width:640px;">
+            <div style="{{ pagosHeadStyle }}"><span>Concepto</span><span>Monto</span><span>Fecha</span><span>Estado</span><span></span></div>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px;">
+              <sc-for list="{{ pagosRows }}" as="row" hint-placeholder-count="3">
+                <div style="{{ row.wrapStyle }}">
+                  <sc-for list="{{ row.cells }}" as="cell" hint-placeholder-count="4">
+                    <sc-if value="{{ cell.isText }}"><span contenteditable="true" onblur="{{ cell.onBlur }}" data-ph="{{ cell.ph }}" style="{{ cell.textStyle }}">{{ cell.value }}</span></sc-if>
+                    <sc-if value="{{ cell.isMoney }}"><span contenteditable="true" onblur="{{ cell.onBlur }}" data-ph="{{ cell.ph }}" style="{{ cell.moneyStyle }}">{{ cell.value }}</span></sc-if>
+                    <sc-if value="{{ cell.isPill }}"><span onclick="{{ cell.onCycle }}" style="{{ cell.pillStyle }}"><span style="{{ cell.dotStyle }}"></span>{{ cell.label }}</span></sc-if>
+                  </sc-for>
+                  <button onclick="{{ row.onDelete }}" style="{{ delBtnStyle }}">×</button>
+                </div>
+              </sc-for>
+            </div>
+          </div></div>
+          <button onclick="{{ onAddPago }}" style="{{ dashedBtnStyle }}">+ Agregar pago</button>
+        </div>
+      </sc-if>
+
+      <!-- HONORARIOS -->
+      <sc-if value="{{ showHonorarios }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:20px;">
+            <div style="{{ statBoxStyle }}">
+              <div style="{{ eyebrowStyle }}">Modelo de cobro</div>
+              <select value="{{ honModelo }}" onchange="{{ onHonModeloChange }}" style="{{ inlineSelectStyle }}">
+                <option style="{{ optionStyle }}">Tarifa plana</option><option style="{{ optionStyle }}">Porcentaje del proyecto</option><option style="{{ optionStyle }}">Por hora</option>
+              </select>
+            </div>
+            <div style="{{ statBoxStyle }}"><div style="{{ eyebrowStyle }}">Honorario base</div><div contenteditable="true" onblur="{{ onHonBaseBlur }}" data-ph="$ 0" style="{{ statValueSmStyle }}">{{ honBase }}</div></div>
+            <div style="{{ statBoxStyle }}"><div style="{{ eyebrowStyle }}">Porcentaje del proyecto</div><div contenteditable="true" onblur="{{ onHonPctBlur }}" data-ph="%" style="{{ statValueSmStyle }}">{{ honPct }}</div></div>
+            <div style="{{ statBoxStyle }}"><div style="{{ eyebrowStyle }}">Colchón de contingencia</div><div contenteditable="true" onblur="{{ onHonColchonBlur }}" data-ph="%" style="{{ statValueSmStyle }}">{{ honColchon }}</div></div>
+            <div style="{{ statBoxStyle }}"><div style="{{ eyebrowStyle }}">Ambientes incluidos</div><div contenteditable="true" onblur="{{ onHonAmbBlur }}" data-ph="0" style="{{ statValueSmStyle }}">{{ honAmbientes }}</div></div>
+            <div style="{{ statBoxStyle }}"><div style="{{ eyebrowStyle }}">Rondas de revisión</div><div contenteditable="true" onblur="{{ onHonRondasBlur }}" data-ph="0" style="{{ statValueSmStyle }}">{{ honRondas }}</div></div>
+          </div>
+          <div style="{{ statBoxAccentStyle }}">
+            <div style="{{ eyebrowAccentStyle }}">Honorario estimado</div>
+            <div style="{{ statValueStyle }}">{{ honEstimado }}</div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- CAMBIOS -->
+      <sc-if value="{{ showCambios }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <div style="display:flex;gap:12px;margin-bottom:26px;flex-wrap:wrap;">
+            <div style="{{ statBoxAccentStyle }}flex:1;min-width:170px;"><div style="{{ eyebrowAccentStyle }}">Aprobados</div><div style="{{ statValueStyle }}">{{ cambiosAprobados }}</div></div>
+            <div style="{{ statBoxStyle }}flex:1;min-width:170px;"><div style="{{ eyebrowStyle }}">Propuestos</div><div style="{{ statValueStyle }}">{{ cambiosPropuestos }}</div></div>
+          </div>
+          <div style="overflow-x:auto;"><div style="min-width:700px;">
+            <div style="{{ cambiosHeadStyle }}"><span>Descripción</span><span>Tipo</span><span>Costo</span><span>Estado</span><span>Fecha</span><span></span></div>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px;">
+              <sc-for list="{{ cambiosRows }}" as="row" hint-placeholder-count="2">
+                <div style="{{ row.wrapStyle }}">
+                  <sc-for list="{{ row.cells }}" as="cell" hint-placeholder-count="5">
+                    <sc-if value="{{ cell.isText }}"><span contenteditable="true" onblur="{{ cell.onBlur }}" data-ph="{{ cell.ph }}" style="{{ cell.textStyle }}">{{ cell.value }}</span></sc-if>
+                    <sc-if value="{{ cell.isMoney }}"><span contenteditable="true" onblur="{{ cell.onBlur }}" data-ph="{{ cell.ph }}" style="{{ cell.moneyStyle }}">{{ cell.value }}</span></sc-if>
+                    <sc-if value="{{ cell.isPill }}"><span onclick="{{ cell.onCycle }}" style="{{ cell.pillStyle }}"><span style="{{ cell.dotStyle }}"></span>{{ cell.label }}</span></sc-if>
+                  </sc-for>
+                  <button onclick="{{ row.onDelete }}" style="{{ delBtnStyle }}">×</button>
+                </div>
+              </sc-for>
+            </div>
+          </div></div>
+          <button onclick="{{ onAddCambio }}" style="{{ dashedBtnStyle }}">+ Agregar cambio</button>
+        </div>
+      </sc-if>
+
+      <!-- PROVEEDORES -->
+      <sc-if value="{{ showProveedores }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <div style="display:flex;gap:12px;margin-bottom:26px;flex-wrap:wrap;">
+            <div style="{{ statBoxAccentStyle }}flex:1;min-width:170px;"><div style="{{ eyebrowAccentStyle }}">Registrados</div><div style="{{ statValueStyle }}">{{ provTotal }}</div></div>
+            <div style="{{ statBoxStyle }}flex:1;min-width:170px;"><div style="{{ eyebrowStyle }}">Confirmados</div><div style="{{ statValueStyle }}">{{ provConfirmados }}</div></div>
+          </div>
+          <div style="overflow-x:auto;"><div style="min-width:720px;">
+            <div style="{{ provHeadStyle }}"><span>Proveedor</span><span>Categoría</span><span>Contacto</span><span>Teléfono</span><span>Estado</span><span></span></div>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px;">
+              <sc-for list="{{ provRows }}" as="row" hint-placeholder-count="2">
+                <div style="{{ row.wrapStyle }}">
+                  <sc-for list="{{ row.cells }}" as="cell" hint-placeholder-count="5">
+                    <sc-if value="{{ cell.isText }}"><span contenteditable="true" onblur="{{ cell.onBlur }}" data-ph="{{ cell.ph }}" style="{{ cell.textStyle }}">{{ cell.value }}</span></sc-if>
+                    <sc-if value="{{ cell.isPill }}"><span onclick="{{ cell.onCycle }}" style="{{ cell.pillStyle }}"><span style="{{ cell.dotStyle }}"></span>{{ cell.label }}</span></sc-if>
+                  </sc-for>
+                  <button onclick="{{ row.onDelete }}" style="{{ delBtnStyle }}">×</button>
+                </div>
+              </sc-for>
+            </div>
+          </div></div>
+          <button onclick="{{ onAddProv }}" style="{{ dashedBtnStyle }}">+ Agregar proveedor</button>
+        </div>
+      </sc-if>
+
+      <!-- CATALOGO -->
+      <sc-if value="{{ showCatalogo }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <div style="display:flex;gap:12px;margin-bottom:26px;flex-wrap:wrap;">
+            <div style="{{ statBoxAccentStyle }}flex:1;min-width:170px;"><div style="{{ eyebrowAccentStyle }}">Ítems registrados</div><div style="{{ statValueStyle }}">{{ catalogoTotal }}</div></div>
+          </div>
+          <div style="overflow-x:auto;"><div style="min-width:700px;">
+            <div style="{{ catalogoHeadStyle }}"><span>Ítem</span><span>Tipo</span><span>Unidad</span><span>Precio</span><span>Proveedor</span><span></span></div>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px;">
+              <sc-for list="{{ catalogoRows }}" as="row" hint-placeholder-count="2">
+                <div style="{{ row.wrapStyle }}">
+                  <sc-for list="{{ row.cells }}" as="cell" hint-placeholder-count="5">
+                    <sc-if value="{{ cell.isText }}"><span contenteditable="true" onblur="{{ cell.onBlur }}" data-ph="{{ cell.ph }}" style="{{ cell.textStyle }}">{{ cell.value }}</span></sc-if>
+                    <sc-if value="{{ cell.isMoney }}"><span contenteditable="true" onblur="{{ cell.onBlur }}" data-ph="{{ cell.ph }}" style="{{ cell.moneyStyle }}">{{ cell.value }}</span></sc-if>
+                  </sc-for>
+                  <button onclick="{{ row.onDelete }}" style="{{ delBtnStyle }}">×</button>
+                </div>
+              </sc-for>
+            </div>
+          </div></div>
+          <button onclick="{{ onAddCatalogo }}" style="{{ dashedBtnStyle }}">+ Agregar ítem</button>
+        </div>
+      </sc-if>
+
+      <!-- EQUIPO -->
+      <sc-if value="{{ showEquipo }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;margin-bottom:20px;">
+            <sc-for list="{{ equipoCards }}" as="m" hint-placeholder-count="3">
+              <div style="{{ m.wrapStyle }}">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+                  <div style="{{ m.avatarStyle }}">{{ m.initials }}</div>
+                  <div style="flex:1;min-width:0;">
+                    <span contenteditable="true" onblur="{{ m.onNameBlur }}" data-ph="Nombre" style="{{ m.nameStyle }}">{{ m.name }}</span>
+                    <span contenteditable="true" onblur="{{ m.onRoleBlur }}" data-ph="Rol" style="{{ m.roleStyle }}">{{ m.role }}</span>
+                  </div>
+                  <button onclick="{{ m.onDelete }}" style="{{ delBtnStyle }}">×</button>
+                </div>
+                <span contenteditable="true" onblur="{{ m.onContactBlur }}" data-ph="Correo / teléfono" style="{{ m.metaStyle }}">{{ m.contact }}</span>
+                <span contenteditable="true" onblur="{{ m.onNotesBlur }}" data-ph="Notas" style="{{ m.notesStyle }}">{{ m.notes }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ showEquipo }}" hint-placeholder-val="{{ false }}">
+        <button onclick="{{ onAddEquipo }}" style="{{ dashedBtnStyle }}">+ Agregar integrante</button>
+      </sc-if>
+
+      <!-- DOCUMENTOS -->
+      <sc-if value="{{ showDocumentos }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <div style="{{ driveBannerStyle }}">
+            <div style="flex:1;min-width:200px;">
+              <div style="{{ eyebrowAccentStyle }}">Carpeta de Drive del proyecto</div>
+              <div contenteditable="true" onblur="{{ onDriveBlur }}" data-ph="Pega aquí el link de la carpeta de Drive" style="{{ driveTextStyle }}">{{ pDrive }}</div>
+            </div>
+            <a href="{{ driveHref }}" target="_blank" rel="noopener" style="{{ driveOpenBtnStyle }}">Abrir Drive ↗</a>
+          </div>
+          <div style="overflow-x:auto;"><div style="min-width:720px;">
+            <div style="{{ docsHeadStyle }}"><span>Documento</span><span>Tipo</span><span>Link de Drive</span><span>Fecha</span><span>Estado</span><span></span></div>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px;">
+              <sc-for list="{{ docsRows }}" as="row" hint-placeholder-count="3">
+                <div style="{{ row.wrapStyle }}">
+                  <sc-for list="{{ row.cells }}" as="cell" hint-placeholder-count="5">
+                    <sc-if value="{{ cell.isText }}"><span contenteditable="true" onblur="{{ cell.onBlur }}" data-ph="{{ cell.ph }}" style="{{ cell.textStyle }}">{{ cell.value }}</span></sc-if>
+                    <sc-if value="{{ cell.isPill }}"><span onclick="{{ cell.onCycle }}" style="{{ cell.pillStyle }}"><span style="{{ cell.dotStyle }}"></span>{{ cell.label }}</span></sc-if>
+                  </sc-for>
+                  <button onclick="{{ row.onDelete }}" style="{{ delBtnStyle }}">×</button>
+                </div>
+              </sc-for>
+            </div>
+          </div></div>
+          <button onclick="{{ onAddDoc }}" style="{{ dashedBtnStyle }}">+ Agregar documento</button>
+        </div>
+      </sc-if>
+
+      <!-- MOODBOARD -->
+      <sc-if value="{{ showMoodboard }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-bottom:20px;">
+            <sc-for list="{{ moodItems }}" as="m" hint-placeholder-count="3">
+              <div style="{{ m.cardStyle }}">
+                <div style="{{ m.uploadLabelStyle }}"><span>📷 Foto de inspiración</span></div>
+                <div contenteditable="true" onblur="{{ m.onNombreBlur }}" data-ph="Nombre de la inspiración" style="{{ m.titleStyle }}">{{ m.nombre }}</div>
+                <div contenteditable="true" onblur="{{ m.onDescBlur }}" data-ph="Descripción" style="{{ m.descStyle }}">{{ m.descripcion }}</div>
+                <div style="display:flex;justify-content:space-between;gap:10px;margin-bottom:12px;">
+                  <div contenteditable="true" onblur="{{ m.onAreaBlur }}" data-ph="Área" style="{{ m.areaStyle }}">{{ m.area }}</div>
+                  <div contenteditable="true" onblur="{{ m.onCostoBlur }}" data-ph="Costo" style="{{ m.costoStyle }}">{{ m.costo }}</div>
+                </div>
+                <div style="{{ m.driveRowStyle }}">
+                  <span style="{{ m.driveIconStyle }}">🔗</span>
+                  <div contenteditable="true" onblur="{{ m.onDriveBlur }}" data-ph="Pega aquí el link de la carpeta de Drive con las fotos" style="{{ m.driveInputStyle }}">{{ m.drive }}</div>
+                  <sc-if value="{{ m.hasDrive }}" hint-placeholder-val="{{ false }}"><a href="{{ m.driveHref }}" target="_blank" rel="noopener" style="{{ m.driveGoStyle }}">Ver fotos ↗</a></sc-if>
+                </div>
+                <button onclick="{{ m.onDelete }}" style="{{ removeBtnStyle }}">Eliminar</button>
+              </div>
+            </sc-for>
+          </div>
+          <button onclick="{{ onAddMood }}" style="{{ dashedBtnStyle }}">+ Agregar inspiración</button>
+        </div>
+      </sc-if>
+
+      <!-- ANTES / DESPUES -->
+      <sc-if value="{{ showAntesDespues }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <sc-for list="{{ baItems }}" as="b" hint-placeholder-count="2">
+            <div style="{{ b.cardStyle }}">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:14px;">
+                <div contenteditable="true" onblur="{{ b.onCaptionBlur }}" data-ph="Descripción de esta comparación" style="{{ b.titleStyle }}">{{ b.caption }}</div>
+                <button onclick="{{ b.onDelete }}" style="{{ delBtnStyle }}">×</button>
+              </div>
+              <div style="{{ b.driveRowStyle }}">
+                <span style="{{ b.driveIconStyle }}">🔗</span>
+                <div contenteditable="true" onblur="{{ b.onDriveBlur }}" data-ph="Pega aquí el link de la carpeta de Drive con las fotos" style="{{ b.driveInputStyle }}">{{ b.drive }}</div>
+                <sc-if value="{{ b.hasDrive }}" hint-placeholder-val="{{ false }}"><a href="{{ b.driveHref }}" target="_blank" rel="noopener" style="{{ b.driveGoStyle }}">Ver fotos ↗</a></sc-if>
+              </div>
+            </div>
+          </sc-for>
+          <button onclick="{{ onAddBA }}" style="{{ dashedBtnStyle }}">+ Agregar comparación</button>
+        </div>
+      </sc-if>
+
+      <!-- CALENDARIO / TAREAS -->
+      <sc-if value="{{ showCalendario }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <div style="overflow-x:auto;"><div style="min-width:860px;">
+            <div style="{{ calHeadStyle }}"><span></span><span>Tarea</span><span>Responsable</span><span>Inicio</span><span>Fin</span><span>Prioridad</span><span>Avance</span><span></span></div>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px;">
+              <sc-for list="{{ calRows }}" as="row" hint-placeholder-count="3">
+                <div style="{{ row.wrapStyle }}">
+                  <button onclick="{{ row.onToggleDone }}" style="{{ row.checkStyle }}">{{ row.checkMark }}</button>
+                  <sc-for list="{{ row.cells }}" as="cell" hint-placeholder-count="6">
+                    <sc-if value="{{ cell.isText }}"><span contenteditable="true" onblur="{{ cell.onBlur }}" data-ph="{{ cell.ph }}" style="{{ cell.textStyle }}">{{ cell.value }}</span></sc-if>
+                    <sc-if value="{{ cell.isPill }}"><span onclick="{{ cell.onCycle }}" style="{{ cell.pillStyle }}"><span style="{{ cell.dotStyle }}"></span>{{ cell.label }}</span></sc-if>
+                    <sc-if value="{{ cell.isRange }}"><div style="display:flex;align-items:center;gap:8px;"><input type="range" min="0" max="100" value="{{ cell.numValue }}" onchange="{{ cell.onRange }}" style="width:100%;accent-color:#9C1B3E;"/><span style="{{ cell.rangeLabelStyle }}">{{ cell.value }}</span></div></sc-if>
+                  </sc-for>
+                  <button onclick="{{ row.onDelete }}" style="{{ delBtnStyle }}">×</button>
+                </div>
+              </sc-for>
+            </div>
+          </div></div>
+          <button onclick="{{ onAddCal }}" style="{{ dashedBtnStyle }}">+ Agregar tarea</button>
+        </div>
+      </sc-if>
+
+      <!-- BITACORA -->
+      <sc-if value="{{ showBitacora }}" hint-placeholder-val="{{ false }}">
+        <div>
+          <sc-for list="{{ logItems }}" as="l" hint-placeholder-count="3">
+            <div style="{{ logRowStyle }}">
+              <span contenteditable="true" onblur="{{ l.onFechaBlur }}" data-ph="dd/mm" style="{{ logFechaStyle }}">{{ l.fecha }}</span>
+              <div style="flex:1;">
+                <div contenteditable="true" onblur="{{ l.onAutorBlur }}" data-ph="Quién escribe" style="{{ logAutorStyle }}">{{ l.autor }}</div>
+                <div contenteditable="true" onblur="{{ l.onNotaBlur }}" data-ph="Nota de la reunión o decisión tomada..." style="{{ logNotaStyle }}">{{ l.nota }}</div>
+              </div>
+              <button onclick="{{ l.onDelete }}" style="{{ delBtnStyle }}">×</button>
+            </div>
+          </sc-for>
+          <button onclick="{{ onAddLog }}" style="{{ dashedBtnStyle }}margin-top:14px;">+ Agregar entrada</button>
+        </div>
+      </sc-if>
+
+        </div>
+      </div>
+
+      <div style="{{ dangerZoneStyle }}">
+        <button onclick="{{ onDeleteProject }}" style="{{ dangerBtnStyle }}" style-hover="border-color:#C4524C;color:#E7A6A6;">Eliminar este proyecto</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900}}">
+function palette(theme){
+  const light = theme==='light';
+  return light ? {
+    bg:'#FAF7F2', header:'rgba(250,247,242,.92)', card:'#FFFFFF', cardAlt:'#FFFFFF',
+    border:'rgba(20,15,10,.09)', borderStrong:'rgba(20,15,10,.16)',
+    text:'#1B1714', textSoft:'#5D5348', textMute:'#948B7C',
+    accent:'#9C1B3E', accentSoft:'rgba(156,27,62,.07)', accentBorder:'rgba(156,27,62,.22)', accentText:'#7A1030',
+    track:'rgba(20,15,10,.08)', inputBg:'#FFFFFF', modalBg:'#FFFFFF', logoFilter:'invert(1) brightness(.25)',
+    successBar:'#5C7A46', dangerBar:'#B3453F'
+  } : {
+    bg:'#0B0A09', header:'rgba(11,10,9,.88)', card:'#141210', cardAlt:'#151312',
+    border:'rgba(255,255,255,.09)', borderStrong:'rgba(255,255,255,.16)',
+    text:'#F3EFE9', textSoft:'#AFA89C', textMute:'#6E655A',
+    accent:'#9C1B3E', accentSoft:'rgba(156,27,62,.1)', accentBorder:'rgba(156,27,62,.3)', accentText:'#E39AB0',
+    track:'rgba(255,255,255,.08)', inputBg:'#0B0A09', modalBg:'#151312', logoFilter:'none',
+    successBar:'#8FA879', dangerBar:'#C4524C'
+  };
+}
+function styleColors(theme){
+  const light = theme==='light';
+  return {
+    muted:{bg:light?'rgba(20,15,10,.05)':'rgba(255,255,255,.05)', fg:light?'#5D5348':'#AFA89C', dot:light?'#948B7C':'#6E655A'},
+    wine:{bg:'rgba(156,27,62,.14)', fg:light?'#7A1030':'#F0B4C6', dot:'#D6486E'},
+    terracotta:{bg:'rgba(201,122,62,.16)', fg:light?'#8C4A22':'#E3A876', dot:'#C97A3E'},
+    dark:{bg:'rgba(143,168,121,.18)', fg:light?'#3F5A30':'#C7DBB8', dot:'#8FA879'},
+    darkred:{bg:'rgba(196,82,76,.16)', fg:light?'#9A3530':'#E7A6A6', dot:'#C4524C'},
+    neutral:{bg:light?'rgba(20,15,10,.03)':'rgba(255,255,255,.03)', fg:light?'#948B7C':'#7A7264', dot:light?'#B0A99A':'#5C554A'}
+  };
+}
+const GROUPS = {
+  estado:{states:[['plan','muted','Planeación'],['curso','wine','En diseño'],['construccion','darkred','En construcción'],['revision','terracotta','En revisión'],['listo','dark','Entregado'],['pausa','neutral','En pausa']]},
+  pago:{states:[['pendiente','terracotta','Pendiente'],['pagado','dark','Pagado'],['vencido','darkred','Vencido']]},
+  doc:{states:[['pendiente','muted','Pendiente'],['revision','wine','En revisión'],['aprobado','dark','Aprobado']]},
+  proveedor:{states:[['contactar','muted','Por contactar'],['evaluacion','terracotta','En evaluación'],['confirmado','dark','Confirmado']]},
+  cambio:{states:[['propuesto','terracotta','Propuesto'],['aprobado','dark','Aprobado'],['rechazado','darkred','Rechazado']]},
+  prioridad:{states:[['baja','muted','Baja'],['media','wine','Media'],['alta','terracotta','Alta'],['urgente','darkred','Urgente']]}
+};
+function styleFor(group,key,theme){
+  const g=GROUPS[group]; const found=g.states.find(s=>s[0]===key)||g.states[0];
+  const c=styleColors(theme)[found[1]];
+  return {bg:c.bg,fg:c.fg,dot:c.dot,label:found[2],key:found[0]};
+}
+function groupKeys(group){ return GROUPS[group].states.map(s=>s[0]); }
+function parseMoney(t){ const n=parseFloat((t||'').toString().replace(/[^0-9.\-]/g,'')); return isNaN(n)?0:n; }
+function fmtMoney(n){ return '$ '+Math.round(n).toLocaleString('es-CO'); }
+function uid(){ return Math.random().toString(36).slice(2,9); }
+function initials(name){ return (name||'').trim().split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0].toUpperCase()).join('')||'—'; }
+
+const SUPABASE_URL='https://aimzrdssxdvnxnhhwzsa.supabase.co';
+const SUPABASE_KEY='sb_publishable_GCIZs0YmcHVmzsh6BCPICQ_YXe9QQqi';
+const sb=(window.supabase && window.supabase.createClient) ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+const SHARED_BOARD_ID='cobox-equipo';
+
+const SCOPE_LABELS=['Diseño de interiores','Arquitectura','Ingeniería (MEP)','Permisos y zonificación','Fiscalidad y registro del negocio','Gerencia de obra','Mobiliario y decoración'];
+const TABS=[
+  ['resumen','Resumen'],['cronograma','Cronograma'],['presupuesto','Presupuesto'],['honorarios','Honorarios'],
+  ['cambios','Cambios'],['proveedores','Proveedores'],['catalogo','Catálogo'],['equipo','Equipo'],
+  ['documentos','Documentos'],['moodboard','Moodboard'],['antesDespues','Antes / Después'],
+  ['calendario','Calendario'],['bitacora','Bitácora']
+];
+const GRID={
+  fases:'26px 2fr 1.1fr .8fr .8fr 1.1fr 30px',
+  pagos:'2fr 1fr 1fr 1.1fr 30px',
+  cambios:'2fr 1fr 1fr 1.1fr .9fr 30px',
+  proveedores:'1.6fr 1.1fr 1.3fr 1fr 1.1fr 30px',
+  catalogo:'1.6fr .9fr .9fr .9fr 1.2fr 30px',
+  docs:'1.8fr .9fr 1.5fr .9fr 1.1fr 30px',
+  calendario:'26px 1.6fr 1.1fr .8fr .8fr .9fr 1.2fr 30px'
+};
+
+function blankProject(name,type,status){
+  return {
+    id:'p'+Date.now().toString(36)+uid(), name:name||'', type:type||'Residencial', loc:'', status:status||'plan',
+    pct:0, area:'', pm:'', start:'', end:'', budget:'', notes:'', drive:'',
+    scope:[false,false,false,false,false,false,false],
+    fases:[['Descubrimiento y brief','','','','listo'],['Diseño conceptual','','','','curso'],['Documentación técnica','','','','plan'],['Construcción / ejecución','','','','plan'],['Entrega final','','','','plan']],
+    categorias:[['Diseño','',''],['Materiales','',''],['Mano de obra','',''],['Contingencia','','']],
+    pagos:[['Anticipo (30%)','','','pendiente'],['Pago intermedio (40%)','','','pendiente'],['Pago final (30%)','','','pendiente']],
+    honorarios:{modelo:'Tarifa plana',base:'',pct:'',colchon:'',ambientes:'',rondas:''},
+    cambios:[], proveedores:[], catalogo:[],
+    equipo:[{id:uid(),name:'',role:'Project manager',contact:'',notes:''},{id:uid(),name:'',role:'Arquitecto/a',contact:'',notes:''},{id:uid(),name:'',role:'Diseñador/a de interiores',contact:'',notes:''}],
+    docs:[['Contrato de servicios','Contrato','','','pendiente'],['Planos arquitectónicos','Planos','','','pendiente']],
+    moodboard:[], ba:[], calendario:[],
+    log:[['','','Kickoff del proyecto — alineación de expectativas y alcance inicial.']],
+  };
+}
+function seedProject(){
+  const p=blankProject('Familia Duarte — Casa La Ceiba','Residencial','curso');
+  Object.assign(p,{loc:'Bogotá, Colombia', pct:45, area:'320', pm:'Valentina Ríos', start:'03/02/25', end:'20/11/25', budget:'$ 185.000.000',
+    notes:'Cliente busca materiales cálidos y luz natural. Prioridad: cocina abierta al comedor. Mascota grande en casa — pisos resistentes.'});
+  p.scope=[true,true,false,false,false,true,true];
+  p.fases=[['Descubrimiento y brief','Valentina Ríos','03/02','14/02','listo'],['Diseño conceptual','Equipo diseño','17/02','21/03','listo'],['Documentación técnica','Arq. Tomás Vega','24/03','25/04','curso'],['Construcción / ejecución','Gerencia de obra','28/04','30/09','plan'],['Entrega final','Valentina Ríos','01/10','20/11','plan']];
+  p.categorias=[['Diseño','18000000','17200000'],['Materiales','62000000','58400000'],['Mano de obra','54000000','55100000'],['Contingencia','12000000','0']];
+  p.pagos=[['Anticipo (30%)','55500000','05/02','pagado'],['Pago intermedio (40%)','74000000','24/03','pagado'],['Pago final (30%)','55500000','20/11','pendiente']];
+  p.honorarios={modelo:'Porcentaje del proyecto',base:'',pct:'12',colchon:'15',ambientes:'6',rondas:'3'};
+  p.cambios=[['Ampliar isla de cocina 40cm','Cambio de materiales','3200000','aprobado','15/04']];
+  p.proveedores=[['El Roble Diseño','Mobiliario a medida','Laura Gómez','+57 300 555 1212','confirmado'],['Pisos Andinos SAS','Acabados','Carlos Neira','+57 310 444 9080','evaluacion']];
+  p.catalogo=[['Piso laminado roble','Material de acabado','m²','185000','Pisos Andinos SAS'],['Isla de cocina a medida','Mobiliario','unidad','14500000','El Roble Diseño']];
+  p.equipo=[{id:uid(),name:'Valentina Ríos',role:'Project manager',contact:'valentina@cobox.studio',notes:'Punto de contacto principal'},{id:uid(),name:'Tomás Vega',role:'Arquitecto',contact:'tomas@cobox.studio',notes:''},{id:uid(),name:'Ana Kim',role:'Diseñadora de interiores',contact:'ana@cobox.studio',notes:'Moodboard y especificación'}];
+  p.docs=[['Contrato de servicios','Contrato','','28/01','aprobado'],['Planos arquitectónicos','Planos','','20/03','revision'],['Renders 3D cocina','Renders','','02/04','pendiente']];
+  p.moodboard=[{id:uid(),nombre:'Isla central en cuarzo blanco',descripcion:'Isla de 2.4m con tres puestos en la barra, contraste con madera cálida.',area:'Cocina',costo:'$ 14.500.000',drive:''}];
+  p.ba=[{id:uid(),caption:'Sala principal',drive:''}];
+  p.calendario=[['Reunión inicial con el cliente','Valentina Ríos','03/02','03/02','media','100','1'],['Aprobación de moodboard','Ana Kim','10/03','21/03','alta','80','']];
+  p.log=[['12/06','Valentina','Cliente aprobó cambio de isla — se ajusta presupuesto de mobiliario.'],['03/02','Valentina','Kickoff del proyecto — alineación de expectativas y alcance inicial.']];
+  return p;
+}
+
+class Component extends DCLogic {
+  state = { screen:'welcome', projects:[], currentId:null, activeTab:'resumen', modal:null, syncing:false, entering:false, bubbleActive:false, bubblePhase:'start', bubbleOrigin:{x:0,y:0}, theme:'dark' };
+
+  componentDidMount(){
+    let loaded=null;
+    try{ const raw=localStorage.getItem('cobox-studio-v1'); if(raw) loaded=JSON.parse(raw); }catch(e){}
+    let theme='dark';
+    try{ theme=localStorage.getItem('cobox-theme')||'dark'; }catch(e){}
+    if(loaded && loaded.projects && loaded.projects.length){ this.setState({projects:loaded.projects, theme}); }
+    else{ this.setState({projects:[seedProject()], theme}); }
+    this._onStorage=(e)=>{
+      if(e.key==='cobox-studio-v1' && e.newValue){
+        try{ const d=JSON.parse(e.newValue); this.setState({projects:d.projects||[]}); }catch(err){}
+      }
+    };
+    window.addEventListener('storage', this._onStorage);
+
+    this.connectBoard();
+  }
+  componentWillUnmount(){
+    window.removeEventListener('storage', this._onStorage);
+    document.removeEventListener('focusout', this._onFocusOut, true);
+    clearTimeout(this._saveTimer); clearTimeout(this._bubbleTimer); clearTimeout(this._focusOutTimer);
+    if(this._channel && sb){ try{ sb.removeChannel(this._channel); }catch(e){} }
+  }
+
+  isEditingNow(){
+    const el=document.activeElement;
+    return !!el && (el.isContentEditable || el.tagName==='INPUT' || el.tagName==='TEXTAREA');
+  }
+  applyRemoteProjects(projects){
+    if(this.isEditingNow()){ this._pendingRemoteProjects=projects; return; }
+    this._pendingRemoteProjects=null;
+    this.setState({projects});
+  }
+
+  async connectBoard(){
+    this._onFocusOut=()=>{
+      clearTimeout(this._focusOutTimer);
+      this._focusOutTimer=setTimeout(()=>{
+        if(this._pendingRemoteProjects && !this.isEditingNow()){
+          const p=this._pendingRemoteProjects; this._pendingRemoteProjects=null;
+          this.setState({projects:p});
+        }
+      }, 60);
+    };
+    document.addEventListener('focusout', this._onFocusOut, true);
+
+    if(!sb) return;
+    try{
+      const {data, error}=await sb.from('boards').select('data').eq('id', SHARED_BOARD_ID).maybeSingle();
+      if(!error && data && data.data && data.data.projects && data.data.projects.length){
+        this.applyRemoteProjects(data.data.projects);
+      }
+    }catch(e){}
+    this.subscribeRealtime();
+  }
+  subscribeRealtime(){
+    if(!sb) return;
+    if(this._channel){ try{ sb.removeChannel(this._channel); }catch(e){} }
+    this._channel=sb.channel('board-'+SHARED_BOARD_ID)
+      .on('postgres_changes', {event:'UPDATE', schema:'public', table:'boards', filter:'id=eq.'+SHARED_BOARD_ID}, (payload)=>{
+        if(payload.new && payload.new.data && payload.new.data.projects){ this.applyRemoteProjects(payload.new.data.projects); }
+      })
+      .subscribe();
+  }
+  handleEnterClick(e){
+    const rect = (e && e.currentTarget) ? e.currentTarget.getBoundingClientRect() : null;
+    this.enterStudio(rect);
+  }
+
+  schedulePersist(){
+    this.setState({syncing:true});
+    clearTimeout(this._saveTimer);
+    this._saveTimer=setTimeout(()=>{
+      try{ localStorage.setItem('cobox-studio-v1', JSON.stringify({projects:this.state.projects})); }catch(e){}
+      if(sb){
+        sb.from('boards').upsert({id:SHARED_BOARD_ID, data:{projects:this.state.projects}, updated_at:new Date().toISOString()})
+          .then(()=>this.setState({syncing:false}))
+          .catch(()=>this.setState({syncing:false}));
+      } else {
+        this.setState({syncing:false});
+      }
+    }, 500);
+  }
+  touch(el){
+    this._pendingRemoteProjects=null;
+    if(el && el.isContentEditable && el!==document.activeElement){
+      Array.from(el.childNodes).forEach(n=>{
+        if(!(n.nodeType===1 && n.classList && n.classList.contains('sc-interp'))) n.remove();
+      });
+    }
+    this.forceUpdate();
+    this.schedulePersist();
+  }
+  toggleTheme(){ const t=this.state.theme==='dark'?'light':'dark'; this.setState({theme:t}); try{ localStorage.setItem('cobox-theme',t); }catch(e){} }
+
+  currentProject(){ return this.state.projects.find(p=>p.id===this.state.currentId); }
+  updateProjectField(field,value,el){ const p=this.currentProject(); if(!p) return; p[field]=value; this.touch(el); }
+
+  headStyle(cols,T){ return {display:'grid',gridTemplateColumns:cols,padding:'0 16px 8px',fontFamily:"'IBM Plex Mono',monospace",fontSize:'9px',letterSpacing:'.08em',textTransform:'uppercase',color:T.textMute,gap:'12px'}; }
+
+  buildCell(key,idx,ci,col,T){
+    const p=this.currentProject(); const rowArr=p[key][idx]; const rawVal=rowArr[ci];
+    const textStyle={outline:'none',fontSize:'13.5px',fontWeight:300,color:T.text};
+    const moneyStyle={outline:'none',fontSize:'13px',fontFamily:"'IBM Plex Mono',monospace",color:T.textSoft};
+    if(col.type==='text') return {isText:true, value:rawVal||'', ph:col.ph, textStyle, onBlur:(e)=>{ p[key][idx][ci]=e.target.textContent.trim(); this.touch(e.target); }};
+    if(col.type==='money') return {isMoney:true, value:rawVal||'', ph:col.ph, moneyStyle, onBlur:(e)=>{ p[key][idx][ci]=e.target.textContent.trim(); this.touch(e.target); }};
+    if(col.type==='pill'){
+      const st=styleFor(col.group, rawVal||groupKeys(col.group)[0], this.state.theme);
+      return {isPill:true, label:st.label,
+        pillStyle:{background:st.bg,color:st.fg,display:'inline-flex',alignItems:'center',gap:'6px',padding:'6px 13px',borderRadius:'100px',fontSize:'11.5px',fontWeight:600,cursor:'pointer',width:'fit-content'},
+        dotStyle:{background:st.dot,width:'6px',height:'6px',borderRadius:'50%'},
+        onCycle:()=>{ const keys=groupKeys(col.group); const cur=rowArr[ci]||keys[0]; rowArr[ci]=keys[(keys.indexOf(cur)+1)%keys.length]; this.touch(); }};
+    }
+    if(col.type==='range'){
+      const n=parseInt(rawVal)||0;
+      return {isRange:true, numValue:n, value:n+'%', rangeLabelStyle:{fontFamily:"'IBM Plex Mono',monospace",fontSize:'10.5px',color:T.textSoft}, onRange:(e)=>{ p[key][idx][ci]=e.target.value; this.touch(); }};
+    }
+  }
+  buildRows(key,schema,gridCols,T,doneIdx){
+    const p=this.currentProject(); if(!p) return [];
+    const rowBase={display:'grid',gridTemplateColumns:gridCols,alignItems:'center',background:T.card,border:'1px solid '+T.border,borderRadius:'12px',padding:'13px 16px',gap:'12px'};
+    const doneTint={background:'rgba(143,168,121,.08)',borderColor:'rgba(143,168,121,.3)'};
+    return (p[key]||[]).map((rowArr,idx)=>{
+      const row={
+        key:key+idx,
+        cells:schema.map((col,ci)=>this.buildCell(key,idx,ci,col,T)),
+        onDelete:()=>{ p[key].splice(idx,1); this.touch(); },
+        wrapStyle: rowBase
+      };
+      if(doneIdx!=null){
+        const doneVal=rowArr[doneIdx]==='1';
+        row.checkMark=doneVal?'✓':'';
+        row.checkStyle={width:'18px',height:'18px',borderRadius:'50%',border:doneVal?'none':'1.5px solid '+T.borderStrong,background:doneVal?T.successBar:'transparent',color:'#0B0A09',fontSize:'11px',fontWeight:700,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',padding:0};
+        row.onToggleDone=()=>{ rowArr[doneIdx]=doneVal?'':'1'; this.touch(); };
+        row.wrapStyle={...rowBase, ...(doneVal?doneTint:{})};
+      }
+      return row;
+    });
+  }
+  addRow(key,def){ const p=this.currentProject(); p[key]=p[key]||[]; p[key].push(def.slice()); this.touch(); }
+
+  openNewProjectModal(status){ this.setState({modal:{status, name:'', type:'Residencial'}}); }
+  closeModal(){ this.setState({modal:null}); }
+  createProject(){
+    const m=this.state.modal; if(!m || !m.name.trim()) return;
+    const p=blankProject(m.name.trim(), m.type, m.status);
+    this.setState(s=>({projects:[p,...s.projects], modal:null, screen:'detail', currentId:p.id, activeTab:'resumen', entering:true}));
+    setTimeout(()=>this.setState({entering:false}),50);
+    this.schedulePersist();
+  }
+  openProject(id){
+    this.setState({screen:'detail', currentId:id, activeTab:'resumen', entering:true});
+    setTimeout(()=>this.setState({entering:false}),50);
+  }
+  deleteProject(){
+    if(!confirm('¿Eliminar este proyecto? Esta acción no se puede deshacer.')) return;
+    this.setState(s=>({projects:s.projects.filter(p=>p.id!==s.currentId), screen:'dashboard', currentId:null}));
+    this.schedulePersist();
+  }
+  async manualSync(){
+    this.setState({syncing:true});
+    if(sb){
+      try{
+        const {data,error}=await sb.from('boards').select('data').eq('id', SHARED_BOARD_ID).maybeSingle();
+        if(!error && data && data.data && data.data.projects){ this.setState({projects:data.data.projects}); }
+      }catch(e){}
+      this.setState({syncing:false});
+      return;
+    }
+    try{ const raw=localStorage.getItem('cobox-studio-v1'); if(raw){ const d=JSON.parse(raw); if(d.projects) this.setState({projects:d.projects}); } }catch(e){}
+    setTimeout(()=>this.setState({syncing:false}), 500);
+  }
+  enterStudio(rect){
+    const r=rect || {left:window.innerWidth/2, top:window.innerHeight/2, width:0, height:0};
+    this.setState({bubbleActive:true, bubblePhase:'start', bubbleOrigin:{x:r.left+r.width/2, y:r.top+r.height/2}});
+    requestAnimationFrame(()=>requestAnimationFrame(()=>this.setState({bubblePhase:'grow'})));
+    clearTimeout(this._bubbleTimer);
+    this._bubbleTimer=setTimeout(()=>this.setState({screen:'dashboard', bubbleActive:false}), 680);
+  }
+  reorderDrop(targetId){
+    const from=this._dragId; if(!from || from===targetId) return;
+    const arr=this.state.projects; const fi=arr.findIndex(p=>p.id===from), ti=arr.findIndex(p=>p.id===targetId);
+    if(fi<0||ti<0) return;
+    const [item]=arr.splice(fi,1); arr.splice(ti,0,item);
+    this._dragId=null; this.touch();
+  }
+
+  renderVals(){
+    const s=this.state;
+    const T=palette(s.theme);
+    const welcomeStyle={position:'fixed',inset:0,display: s.screen==='welcome'?'flex':'none', alignItems:'center', justifyContent:'center', background:'#0B0A09', overflow:'hidden'};
+    const dashboardStyle={display: s.screen==='dashboard'?'block':'none', minHeight:'100vh', background:T.bg};
+    const detailStyle={display: s.screen==='detail'?'block':'none', minHeight:'100vh', background:T.bg};
+    const rootStyle={fontFamily:"'Manrope',sans-serif", color:T.text};
+    const bubbleStyle={position:'fixed',left:s.bubbleOrigin.x+'px',top:s.bubbleOrigin.y+'px',width:'32px',height:'32px',marginLeft:'-16px',marginTop:'-16px',borderRadius:'50%',background:'#0B0A09',transform: s.bubblePhase==='grow'?'scale(70)':'scale(1)', transition:'transform .68s cubic-bezier(.65,0,.35,1)', zIndex:200, pointerEvents:'none'};
+
+    const headerStyle={position:'sticky',top:0,zIndex:40,display:'flex',alignItems:'center',justifyContent:'space-between',padding:'16px clamp(16px,4vw,44px)',background:T.header,backdropFilter:'blur(10px)',borderBottom:'1px solid '+T.border,gap:'12px',flexWrap:'wrap'};
+    const logoStyle={height:'22px',width:'auto',filter:T.logoFilter};
+    const syncPillStyle={display:'flex',alignItems:'center',gap:'8px',fontFamily:"'IBM Plex Mono',monospace",fontSize:'10.5px',color:T.textSoft,padding:'9px 16px',border:'1px solid '+T.border,borderRadius:'30px'};
+    const themeBtnStyle={background:'transparent',color:T.textSoft,border:'1px solid '+T.border,borderRadius:'100px',width:'38px',height:'38px',fontSize:'15px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'};
+    const ghostBtnStyle={background:'transparent',color:T.textSoft,border:'1px solid '+T.border,borderRadius:'100px',padding:'11px 20px',fontFamily:"'Manrope',sans-serif",fontSize:'11.5px',fontWeight:600,letterSpacing:'.06em',textTransform:'uppercase',cursor:'pointer'};
+    const h1Style={fontFamily:"'Fraunces',serif",fontSize:'clamp(34px,5.5vw,56px)',fontWeight:400,letterSpacing:'-.015em',lineHeight:1.05,color:T.text};
+    const subtleTextStyle={color:T.textSoft};
+    const eyebrowStrongStyle={fontFamily:"'Manrope',sans-serif",fontSize:'14px',fontWeight:700,letterSpacing:'.04em',textTransform:'uppercase',color:T.text};
+    const addCardStyle={border:'1px dashed '+T.borderStrong,borderRadius:'16px',minHeight:'160px',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'8px',color:T.textMute,cursor:'pointer'};
+
+    const statusOrder=[['plan','Planeación'],['curso','En curso'],['construccion','En construcción'],['revision','En revisión'],['listo','Entregado'],['pausa','En pausa']];
+    const cardBase={background:T.card,border:'1px solid '+T.border,borderRadius:'16px',padding:'22px 22px 18px',cursor:'grab',display:'flex',flexDirection:'column',minHeight:'158px',transition:'transform .18s ease,border-color .18s ease'};
+    const statusGroups=statusOrder.map(([key,label])=>{
+      const items=s.projects.filter(p=>p.status===key);
+      const st=styleFor('estado',key,s.theme);
+      return {
+        key, label, count:items.length+(items.length===1?' proyecto':' proyectos'),
+        dotStyle:{width:'8px',height:'8px',borderRadius:'50%',background:st.dot,display:'inline-block'},
+        onAdd:()=>this.openNewProjectModal(key),
+        cards: items.map((p,i)=>({
+          id:p.id, name:p.name||'Sin nombre', type:p.type||'Proyecto', loc:p.loc||'—', pct:p.pct||0,
+          nameStyle:{fontFamily:"'Fraunces',serif",fontSize:'22px',fontWeight:400,lineHeight:1.2,marginBottom:'8px',color:T.text},
+          trackStyle:{flex:1,height:'3px',background:T.track,borderRadius:'6px',overflow:'hidden'},
+          pctTextStyle:{fontFamily:"'IBM Plex Mono',monospace",fontSize:'11px',color:T.text},
+          pctBarStyle:{height:'100%',width:(p.pct||0)+'%',background:'#9C1B3E'},
+          style:{...cardBase, animation:'coboxFadeUp .5s ease both', animationDelay:(i*0.05)+'s'},
+          hoverStyle:{borderColor:T.borderStrong,transform:'translateY(-3px)'},
+          onOpen:()=>this.openProject(p.id),
+          onDragStart:()=>{ this._dragId=p.id; },
+          onDragOver:(e)=>e.preventDefault(),
+          onDrop:(e)=>{ e.preventDefault(); this.reorderDrop(p.id); }
+        }))
+      };
+    });
+
+    const modal=s.modal;
+    const cp=this.currentProject();
+    const modalCardStyle={background:T.modalBg,border:'1px solid '+T.border,borderRadius:'20px',padding:'38px 38px 32px',width:'100%',maxWidth:'440px'};
+    const modalTitleStyle={fontFamily:"'Fraunces',serif",fontSize:'26px',fontWeight:400,marginBottom:'24px',color:T.text};
+    const labelStyle={fontFamily:"'IBM Plex Mono',monospace",fontSize:'9.5px',letterSpacing:'.12em',textTransform:'uppercase',color:T.textMute,marginBottom:'8px'};
+    const inputStyle={width:'100%',padding:'14px 16px',borderRadius:'10px',border:'1px solid '+T.border,fontSize:'14px',fontFamily:"'Manrope',sans-serif",background:T.inputBg,color:T.text,outline:'none'};
+    const optionStyle={background:T.card,color:T.text};
+
+    const heroBase={borderRadius:'0px',position:'relative'};
+    const eyebrowStyle={fontFamily:"'IBM Plex Mono',monospace",fontSize:'9.5px',letterSpacing:'.12em',textTransform:'uppercase',color:T.textMute,marginBottom:'10px'};
+    const eyebrowAccentStyle={fontFamily:"'IBM Plex Mono',monospace",fontSize:'9.5px',letterSpacing:'.12em',textTransform:'uppercase',color:T.accentText,marginBottom:'8px'};
+    const h2Style={fontFamily:"'Fraunces',serif",fontWeight:400,fontSize:'20px',marginBottom:'16px',color:T.text};
+    const statBoxStyle={background:T.card,border:'1px solid '+T.border,borderRadius:'16px',padding:'20px 22px'};
+    const statBoxAccentStyle={background:T.accentSoft,border:'1px solid '+T.accentBorder,borderRadius:'16px',padding:'20px 22px'};
+    const statValueStyle={fontFamily:"'Fraunces',serif",fontSize:'27px',color:T.text};
+    const statValueSmStyle={fontSize:'15px',fontWeight:500,outline:'none',color:T.text};
+    const bigNumberStyle={fontFamily:"'Fraunces',serif",fontSize:'21px',color:T.text};
+    const trackBigStyle={height:'4px',background:T.track,borderRadius:'14px',overflow:'hidden'};
+    const textareaStyle={width:'100%',minHeight:'120px',border:'1px solid '+T.border,borderRadius:'16px',background:T.card,color:T.text,padding:'18px 20px',fontFamily:"'Manrope',sans-serif",fontWeight:300,fontSize:'14px',resize:'vertical',outline:'none'};
+    const inlineSelectStyle={width:'100%',fontSize:'15px',fontWeight:500,border:'none',background:'transparent',color:T.text,fontFamily:"'Manrope',sans-serif",outline:'none'};
+    const typeSelectStyle={background:T.card,color:T.accentText,border:'1px solid '+T.border,borderRadius:'100px',padding:'6px 14px',fontFamily:"'IBM Plex Mono',monospace",fontSize:'10.5px'};
+    const heroNameStyle={fontFamily:"'Fraunces',serif",fontWeight:400,fontSize:'clamp(30px,6vw,50px)',lineHeight:1.05,letterSpacing:'-.01em',outline:'none',maxWidth:'760px',color:T.text};
+    const heroLocStyle={fontSize:'15px',fontWeight:300,color:T.textSoft,marginTop:'12px',outline:'none',maxWidth:'600px'};
+    const microLabelStyle={fontFamily:"'IBM Plex Mono',monospace",fontSize:'9px',letterSpacing:'.12em',textTransform:'uppercase',color:T.textMute};
+    const fieldValStyle={fontSize:'15px',fontWeight:500,outline:'none',minWidth:'40px',color:T.text};
+    const detailBodyStyle={display:'flex',gap:'clamp(20px,3vw,44px)',alignItems:'flex-start',marginTop:'32px'};
+    const detailContentStyle={flex:'1',minWidth:0};
+    const tabBarStyle={display:'flex',flexDirection:'column',gap:'2px',width:'196px',flex:'none',position:'sticky',top:'86px',alignSelf:'flex-start',maxHeight:'calc(100vh - 110px)',overflowY:'auto',paddingRight:'6px'};
+    const dashedBtnStyle={display:'inline-flex',alignItems:'center',gap:'8px',background:'transparent',border:'1px dashed '+T.borderStrong,color:T.textSoft,borderRadius:'100px',padding:'11px 20px',fontSize:'12px',fontWeight:600,letterSpacing:'.04em',textTransform:'uppercase',cursor:'pointer'};
+    const delBtnStyle={justifySelf:'end',width:'26px',height:'26px',borderRadius:'8px',border:'1px solid '+T.border,background:'transparent',color:T.textMute,fontSize:'15px',cursor:'pointer'};
+    const removeBtnStyle={marginTop:'2px',width:'100%',background:'transparent',border:'1px solid '+T.border,color:T.textMute,borderRadius:'8px',padding:'8px',fontSize:'11px',fontWeight:600,textTransform:'uppercase',letterSpacing:'.04em',cursor:'pointer'};
+    const dangerZoneStyle={marginTop:'60px',paddingTop:'24px',borderTop:'1px solid '+T.border,display:'flex',justifyContent:'flex-end'};
+    const dangerBtnStyle={background:'transparent',border:'1px solid '+T.border,color:T.textMute,borderRadius:'100px',padding:'10px 18px',fontSize:'11px',fontWeight:600,letterSpacing:'.04em',textTransform:'uppercase',cursor:'pointer'};
+    const driveBannerStyle={display:'flex',alignItems:'center',justifyContent:'space-between',gap:'20px',background:T.accentSoft,border:'1px solid '+T.accentBorder,borderRadius:'16px',padding:'22px 24px',marginBottom:'22px',flexWrap:'wrap'};
+    const driveTextStyle={fontSize:'14px',fontWeight:500,outline:'none',minWidth:'200px',color:T.text};
+    const driveOpenBtnStyle={background:T.text,color:T.bg,fontWeight:700,fontSize:'12px',letterSpacing:'.04em',textTransform:'uppercase',borderRadius:'100px',padding:'12px 20px',textDecoration:'none',whiteSpace:'nowrap',flex:'none'};
+    const logRowStyle={display:'flex',gap:'18px',padding:'20px 0',borderBottom:'1px solid '+T.border,flexWrap:'wrap'};
+    const logFechaStyle={fontFamily:"'IBM Plex Mono',monospace",fontSize:'11px',color:T.accentText,minWidth:'70px',paddingTop:'3px',outline:'none',fontWeight:500};
+    const logAutorStyle={fontSize:'12px',color:T.textSoft,marginBottom:'4px',outline:'none',fontWeight:600,textTransform:'uppercase',letterSpacing:'.04em'};
+    const logNotaStyle={fontSize:'14.5px',fontWeight:300,lineHeight:1.6,outline:'none',color:T.text};
+
+    let tabVals={pName:'',pLoc:'',pArea:'',pPM:'',pStart:'',pEnd:'',pStatusLabel:'',
+      enterAnimStyle:{...heroBase, opacity:1, transform:'translateY(0)'}}, tabs=[];
+    if(cp){
+      tabs=TABS.map(([key,label])=>({
+        key,label,
+        onClick:()=>this.setState({activeTab:key}),
+        style: {padding:'12px 16px',borderRadius:'10px',fontSize:'12.5px',fontWeight:600,letterSpacing:'.02em',textAlign:'left',border:'none',borderLeft: s.activeTab===key?'3px solid #9C1B3E':'3px solid transparent',whiteSpace:'nowrap',
+          background: s.activeTab===key?T.accentSoft:'transparent',
+          color: s.activeTab===key?T.accentText:T.textMute, fontFamily:"'Manrope',sans-serif", textTransform:'uppercase',cursor:'pointer'}
+      }));
+      TABS.forEach(([key])=>{ tabVals['show'+key.charAt(0).toUpperCase()+key.slice(1)] = s.activeTab===key; });
+
+      const pStatus=styleFor('estado', cp.status, s.theme);
+      const scopeBase={display:'flex',alignItems:'center',gap:'9px',borderRadius:'100px',padding:'11px 18px',fontSize:'13px',fontWeight:500,cursor:'pointer'};
+      const scopeBoxBase={width:'15px',height:'15px',borderRadius:'4px',flex:'none'};
+      const scopeItems=SCOPE_LABELS.map((label,i)=>({
+        label, onClick:()=>{ cp.scope[i]=!cp.scope[i]; this.touch(); },
+        style: {...scopeBase, ...(cp.scope[i] ? {background:T.text,color:T.bg} : {background:T.card,border:'1px solid '+T.border,color:T.textSoft})},
+        boxStyle: {...scopeBoxBase, ...(cp.scope[i] ? {background:'#9C1B3E',border:'1.5px solid #9C1B3E'} : {border:'1.5px solid '+T.borderStrong})}
+      }));
+
+      const fasesSchema=[{type:'text',ph:'Nombre de la fase'},{type:'text',ph:'Responsable'},{type:'text',ph:'dd/mm'},{type:'text',ph:'dd/mm'},{type:'pill',group:'estado'}];
+      const pagosSchema=[{type:'text',ph:'Concepto'},{type:'money',ph:'$ 0'},{type:'text',ph:'dd/mm'},{type:'pill',group:'pago'}];
+      const cambiosSchema=[{type:'text',ph:'Descripción del cambio'},{type:'text',ph:'Tipo'},{type:'money',ph:'$ 0'},{type:'pill',group:'cambio'},{type:'text',ph:'dd/mm'}];
+      const provSchema=[{type:'text',ph:'Nombre del proveedor'},{type:'text',ph:'Categoría'},{type:'text',ph:'Contacto'},{type:'text',ph:'Teléfono'},{type:'pill',group:'proveedor'}];
+      const catalogoSchema=[{type:'text',ph:'Ítem'},{type:'text',ph:'Tipo'},{type:'text',ph:'Unidad'},{type:'money',ph:'$ 0'},{type:'text',ph:'Proveedor'}];
+      const docsSchema=[{type:'text',ph:'Nombre del documento'},{type:'text',ph:'Tipo'},{type:'text',ph:'Link de Drive'},{type:'text',ph:'dd/mm'},{type:'pill',group:'doc'}];
+      const calSchema=[{type:'text',ph:'Tarea'},{type:'text',ph:'Responsable'},{type:'text',ph:'dd/mm'},{type:'text',ph:'dd/mm'},{type:'pill',group:'prioridad'},{type:'range'}];
+
+      let totalP=0, pagadoP=0;
+      (cp.pagos||[]).forEach(r=>{ const m=parseMoney(r[1]); totalP+=m; if(r[3]==='pagado') pagadoP+=m; });
+
+      const honB=parseMoney(cp.honorarios.base), honPctNum=parseFloat(cp.honorarios.pct)||0, honColchonNum=parseFloat(cp.honorarios.colchon)||0;
+      let honEstimadoNum = cp.honorarios.modelo==='Porcentaje del proyecto' ? parseMoney(cp.budget)*honPctNum/100 : honB;
+      honEstimadoNum=honEstimadoNum*(1+honColchonNum/100);
+
+      const cambiosAprobados=(cp.cambios||[]).filter(r=>r[3]==='aprobado').length;
+      const cambiosPropuestos=(cp.cambios||[]).filter(r=>r[3]==='propuesto').length;
+      const provConfirmados=(cp.proveedores||[]).filter(r=>r[4]==='confirmado').length;
+
+      const maxCat=Math.max(1,...(cp.categorias||[]).flatMap(r=>[parseMoney(r[1]),parseMoney(r[2])]));
+      const catVisual=(cp.categorias||[]).map((row,idx)=>{
+        const est=parseMoney(row[1]), real=parseMoney(row[2]);
+        const over = real>est && (row[1]||row[2]);
+        return {
+          key:'cat'+idx, name:row[0]||'', est:row[1]||'', real:row[2]||'',
+          wrapStyle:{background:T.card,border:'1px solid '+T.border,borderRadius:'14px',padding:'16px 18px'},
+          nameStyle:{fontSize:'14.5px',fontWeight:600,outline:'none',color:T.text},
+          miniLabelStyle:{fontFamily:"'IBM Plex Mono',monospace",fontSize:'9.5px',color:T.textMute,width:'28px',flex:'none'},
+          trackStyle:{flex:1,height:'6px',background:T.track,borderRadius:'6px',overflow:'hidden'},
+          estBarStyle:{height:'100%',width:(est/maxCat*100)+'%',background:T.textMute},
+          realBarStyle:{height:'100%',width:(real/maxCat*100)+'%',background: over?T.dangerBar:T.successBar},
+          moneyStyle:{outline:'none',fontSize:'12.5px',fontFamily:"'IBM Plex Mono',monospace",color:T.textSoft,width:'88px',textAlign:'right',flex:'none'},
+          diffStyle:{marginTop:'8px',fontSize:'11.5px',fontFamily:"'IBM Plex Mono',monospace",color: over?T.dangerBar:T.successBar},
+          diffLabel: (row[1]||row[2]) ? (over?'+ ':'') + fmtMoney(real-est) + ' vs. estimado' : 'Sin datos aún',
+          onNameBlur:(e)=>{ row[0]=e.target.textContent.trim(); this.touch(e.target); },
+          onEstBlur:(e)=>{ row[1]=e.target.textContent.trim(); this.touch(e.target); },
+          onRealBlur:(e)=>{ row[2]=e.target.textContent.trim(); this.touch(e.target); },
+          onDelete:()=>{ cp.categorias.splice(idx,1); this.touch(); }
+        };
+      });
+
+      const equipoCards=(cp.equipo||[]).map((m,idx)=>({
+        key:m.id, name:m.name, role:m.role, contact:m.contact, notes:m.notes, initials:initials(m.name),
+        wrapStyle:{background:T.card,border:'1px solid '+T.border,borderRadius:'16px',padding:'18px'},
+        avatarStyle:{width:'40px',height:'40px',borderRadius:'50%',background:T.accentSoft,color:T.accentText,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:"'IBM Plex Mono',monospace",fontSize:'13px',fontWeight:600,flex:'none'},
+        nameStyle:{display:'block',fontSize:'14.5px',fontWeight:600,outline:'none',color:T.text},
+        roleStyle:{display:'block',fontSize:'12px',fontWeight:300,color:T.textSoft,outline:'none'},
+        metaStyle:{display:'block',fontSize:'12.5px',color:T.textSoft,outline:'none',marginBottom:'4px'},
+        notesStyle:{display:'block',fontSize:'12.5px',color:T.textMute,outline:'none',fontStyle:'italic'},
+        onNameBlur:(e)=>{ m.name=e.target.textContent.trim(); this.touch(e.target); },
+        onRoleBlur:(e)=>{ m.role=e.target.textContent.trim(); this.touch(e.target); },
+        onContactBlur:(e)=>{ m.contact=e.target.textContent.trim(); this.touch(e.target); },
+        onNotesBlur:(e)=>{ m.notes=e.target.textContent.trim(); this.touch(e.target); },
+        onDelete:()=>{ cp.equipo.splice(idx,1); this.touch(); }
+      }));
+
+      const driveRowStyle={display:'flex',alignItems:'center',gap:'8px',background:T.bg==='#FAF7F2'?'rgba(20,15,10,.04)':'rgba(255,255,255,.04)',border:'1px solid '+T.border,borderRadius:'10px',padding:'8px 12px',marginBottom:'10px'};
+      const driveIconStyle={fontSize:'12px',flex:'none'};
+      const driveInputStyle={flex:1,fontSize:'11.5px',color:T.textSoft,outline:'none',minWidth:'40px'};
+      const driveGoStyle={background:T.accentSoft,color:T.accentText,border:'1px solid '+T.accentBorder,fontSize:'11px',fontWeight:700,textTransform:'uppercase',letterSpacing:'.03em',textDecoration:'none',flex:'none',padding:'7px 12px',borderRadius:'100px',whiteSpace:'nowrap'};
+      const uploadLabelStyle={display:'flex',alignItems:'center',justifyContent:'space-between',gap:'8px',fontSize:'11px',color:T.textMute,marginBottom:'8px',flexWrap:'wrap'};
+
+      tabVals={...tabVals,
+        pName:cp.name, pLoc:cp.loc, pType:cp.type, pArea:cp.area, pPM:cp.pm, pStart:cp.start, pEnd:cp.end,
+        onNameBlur:(e)=>this.updateProjectField('name',e.target.textContent.trim(),e.target),
+        onLocBlur:(e)=>this.updateProjectField('loc',e.target.textContent.trim(),e.target),
+        onAreaBlur:(e)=>this.updateProjectField('area',e.target.textContent.trim(),e.target),
+        onPmBlur:(e)=>this.updateProjectField('pm',e.target.textContent.trim(),e.target),
+        onStartBlur:(e)=>this.updateProjectField('start',e.target.textContent.trim(),e.target),
+        onEndBlur:(e)=>this.updateProjectField('end',e.target.textContent.trim(),e.target),
+        onTypeChange:(e)=>this.updateProjectField('type',e.target.value),
+        pStatusLabel:pStatus.label,
+        pStatusSelectStyle:{background:pStatus.bg,color:pStatus.fg,border:'none',borderLeft:'3px solid '+pStatus.dot,borderRadius:'100px',padding:'6px 15px 6px 12px',fontSize:'13px',fontWeight:600,cursor:'pointer',fontFamily:"'Manrope',sans-serif",outline:'none'},
+        onStatusChange:(e)=>{ const found=GROUPS.estado.states.find(s=>s[2]===e.target.value); if(found){ cp.status=found[0]; this.touch(); } },
+        onBackHome:()=>this.setState({screen:'dashboard',currentId:null}),
+        onDeleteProject:()=>this.deleteProject(),
+        enterAnimStyle: s.entering ? {...heroBase, opacity:0,transform:'translateY(14px)'} : {...heroBase, opacity:1,transform:'translateY(0)',transition:'opacity .35s ease,transform .35s ease'},
+        tabs, scopeItems, typeSelectStyle, heroNameStyle, heroLocStyle, microLabelStyle, fieldValStyle, tabBarStyle, detailBodyStyle, detailContentStyle,
+        eyebrowStyle, eyebrowAccentStyle, h2Style, statBoxStyle, statBoxAccentStyle, statValueStyle, statValueSmStyle, bigNumberStyle, trackBigStyle, textareaStyle, inlineSelectStyle,
+        dashedBtnStyle, delBtnStyle, removeBtnStyle, dangerZoneStyle, dangerBtnStyle, driveBannerStyle, driveTextStyle, driveOpenBtnStyle,
+        logRowStyle, logFechaStyle, logAutorStyle, logNotaStyle,
+        pBudget:cp.budget, onBudgetBlur:(e)=>this.updateProjectField('budget',e.target.textContent.trim(),e.target),
+        pct:cp.pct||0, pctLabel:(cp.pct||0)+'%', pctBarStyle:{height:'100%',width:(cp.pct||0)+'%',background:'#9C1B3E',borderRadius:'14px'},
+        onPctChange:(e)=>this.updateProjectField('pct',parseInt(e.target.value)||0),
+        pNotes:cp.notes, onNotesInput:(e)=>this.updateProjectField('notes',e.target.value),
+
+        fasesHeadStyle:this.headStyle(GRID.fases,T),
+        fasesRows:this.buildRows('fases',fasesSchema,GRID.fases,T,5), onAddFase:()=>this.addRow('fases',['','','','','plan','']),
+        catVisual, onAddCat:()=>this.addRow('categorias',['','','']),
+        pagosHeadStyle:this.headStyle(GRID.pagos,T),
+        pagosRows:this.buildRows('pagos',pagosSchema,GRID.pagos,T), onAddPago:()=>this.addRow('pagos',['','','','pendiente']),
+        totalProyecto:fmtMoney(totalP), totalPagado:fmtMoney(pagadoP), totalSaldo:fmtMoney(totalP-pagadoP),
+
+        honModelo:cp.honorarios.modelo, onHonModeloChange:(e)=>{ cp.honorarios.modelo=e.target.value; this.touch(); },
+        honBase:cp.honorarios.base, onHonBaseBlur:(e)=>{ cp.honorarios.base=e.target.textContent.trim(); this.touch(e.target); },
+        honPct:cp.honorarios.pct, onHonPctBlur:(e)=>{ cp.honorarios.pct=e.target.textContent.trim(); this.touch(e.target); },
+        honColchon:cp.honorarios.colchon, onHonColchonBlur:(e)=>{ cp.honorarios.colchon=e.target.textContent.trim(); this.touch(e.target); },
+        honAmbientes:cp.honorarios.ambientes, onHonAmbBlur:(e)=>{ cp.honorarios.ambientes=e.target.textContent.trim(); this.touch(e.target); },
+        honRondas:cp.honorarios.rondas, onHonRondasBlur:(e)=>{ cp.honorarios.rondas=e.target.textContent.trim(); this.touch(e.target); },
+        honEstimado: fmtMoney(honEstimadoNum),
+
+        cambiosHeadStyle:this.headStyle(GRID.cambios,T),
+        cambiosRows:this.buildRows('cambios',cambiosSchema,GRID.cambios,T), onAddCambio:()=>this.addRow('cambios',['','','','propuesto','']),
+        cambiosAprobados, cambiosPropuestos,
+
+        provHeadStyle:this.headStyle(GRID.proveedores,T),
+        provRows:this.buildRows('proveedores',provSchema,GRID.proveedores,T), onAddProv:()=>this.addRow('proveedores',['','','','','contactar']),
+        provTotal:(cp.proveedores||[]).length, provConfirmados,
+
+        catalogoHeadStyle:this.headStyle(GRID.catalogo,T),
+        catalogoRows:this.buildRows('catalogo',catalogoSchema,GRID.catalogo,T), onAddCatalogo:()=>this.addRow('catalogo',['','','','','']),
+        catalogoTotal:(cp.catalogo||[]).length,
+
+        equipoCards, onAddEquipo:()=>{ cp.equipo=cp.equipo||[]; cp.equipo.push({id:uid(),name:'',role:'',contact:'',notes:''}); this.touch(); },
+
+        pDrive:cp.drive, onDriveBlur:(e)=>this.updateProjectField('drive',e.target.textContent.trim(),e.target), driveHref:cp.drive||'#',
+        docsHeadStyle:this.headStyle(GRID.docs,T),
+        docsRows:this.buildRows('docs',docsSchema,GRID.docs,T), onAddDoc:()=>this.addRow('docs',['','','','','pendiente']),
+
+        moodItems:(cp.moodboard||[]).map(m=>({
+          nombre:m.nombre, descripcion:m.descripcion, area:m.area, costo:m.costo, drive:m.drive||'', hasDrive:!!m.drive, driveHref:m.drive||'#',
+          cardStyle:{background:T.card,border:'1px solid '+T.border,borderRadius:'16px',padding:'16px'},
+          uploadLabelStyle,
+          titleStyle:{fontSize:'14.5px',fontWeight:600,outline:'none',marginBottom:'6px',color:T.text},
+          descStyle:{fontSize:'12.5px',fontWeight:300,color:T.textSoft,outline:'none',marginBottom:'10px',lineHeight:1.5},
+          areaStyle:{outline:'none',fontSize:'11.5px',fontFamily:"'IBM Plex Mono',monospace",color:T.accentText},
+          costoStyle:{outline:'none',fontSize:'11.5px',fontFamily:"'IBM Plex Mono',monospace",color:T.textMute},
+          driveRowStyle, driveIconStyle, driveInputStyle, driveGoStyle,
+          onNombreBlur:(e)=>{ m.nombre=e.target.textContent.trim(); this.touch(e.target); },
+          onDescBlur:(e)=>{ m.descripcion=e.target.textContent.trim(); this.touch(e.target); },
+          onAreaBlur:(e)=>{ m.area=e.target.textContent.trim(); this.touch(e.target); },
+          onCostoBlur:(e)=>{ m.costo=e.target.textContent.trim(); this.touch(e.target); },
+          onDriveBlur:(e)=>{ m.drive=e.target.textContent.trim(); this.touch(e.target); },
+          onDelete:()=>{ cp.moodboard=cp.moodboard.filter(x=>x.id!==m.id); this.touch(); }
+        })),
+        onAddMood:()=>{ cp.moodboard=cp.moodboard||[]; cp.moodboard.push({id:uid(),nombre:'',descripcion:'',area:'',costo:'',drive:''}); this.touch(); },
+
+        baItems:(cp.ba||[]).map(b=>({
+          caption:b.caption, drive:b.drive||'', hasDrive:!!b.drive, driveHref:b.drive||'#',
+          cardStyle:{background:T.card,border:'1px solid '+T.border,borderRadius:'16px',padding:'20px',marginBottom:'14px'},
+          titleStyle:{fontSize:'14.5px',fontWeight:600,outline:'none',color:T.text},
+          driveRowStyle, driveIconStyle, driveInputStyle, driveGoStyle,
+          onCaptionBlur:(e)=>{ b.caption=e.target.textContent.trim(); this.touch(e.target); },
+          onDriveBlur:(e)=>{ b.drive=e.target.textContent.trim(); this.touch(e.target); },
+          onDelete:()=>{ cp.ba=cp.ba.filter(x=>x.id!==b.id); this.touch(); }
+        })),
+        onAddBA:()=>{ cp.ba=cp.ba||[]; cp.ba.push({id:uid(),caption:'',drive:''}); this.touch(); },
+
+        calHeadStyle:this.headStyle(GRID.calendario,T),
+        calRows:this.buildRows('calendario',calSchema,GRID.calendario,T,6), onAddCal:()=>this.addRow('calendario',['','','','','media','0','']),
+
+        logItems:(cp.log||[]).map((l,idx)=>({
+          fecha:l[0], autor:l[1], nota:l[2],
+          onFechaBlur:(e)=>{ cp.log[idx][0]=e.target.textContent.trim(); this.touch(e.target); },
+          onAutorBlur:(e)=>{ cp.log[idx][1]=e.target.textContent.trim(); this.touch(e.target); },
+          onNotaBlur:(e)=>{ cp.log[idx][2]=e.target.textContent.trim(); this.touch(e.target); },
+          onDelete:()=>{ cp.log.splice(idx,1); this.touch(); }
+        })),
+        onAddLog:()=>{ cp.log=cp.log||[]; cp.log.unshift(['','','']); this.touch(); },
+      };
+    }
+
+    return {
+      rootStyle, welcomeStyle, dashboardStyle, detailStyle, bubbleActive:s.bubbleActive, bubbleStyle,
+      onEnter:(e)=>this.handleEnterClick(e),
+      headerStyle, logoStyle, syncPillStyle, themeBtnStyle, ghostBtnStyle, h1Style, subtleTextStyle, eyebrowStrongStyle, addCardStyle,
+      onToggleTheme:()=>this.toggleTheme(), themeIcon: s.theme==='dark'?'☀':'☾',
+      syncLabel: s.syncing?'Guardando...':'Sincronizado',
+      syncDotStyle:{width:'6px',height:'6px',borderRadius:'50%',display:'inline-block',background: s.syncing?'#D9B65C':T.successBar, animation: s.syncing?'coboxPulse 1s infinite':'none'},
+      onManualSync:()=>this.manualSync(),
+      statusGroups,
+      modalOpen: !!modal, modalCardStyle, modalTitleStyle, labelStyle, inputStyle, optionStyle,
+      modalName: modal?modal.name:'', modalType: modal?modal.type:'Residencial',
+      onModalNameChange:(e)=>this.setState(st=>({modal:{...st.modal,name:e.target.value}})),
+      onModalTypeChange:(e)=>this.setState(st=>({modal:{...st.modal,type:e.target.value}})),
+      onModalClose:()=>this.closeModal(),
+      onModalCreate:()=>this.createProject(),
+      ...tabVals,
+    };
+  }
+}
+
+</script>
+</body>
+</html>
